@@ -2,16 +2,7 @@ const inquirer = require("inquirer");
 const mysql = require("mysql");
 const table = require("console.table");
 
-// arrays of entered info
-const allDepartments = [];
-const allRoles = [];
-const allEmployees = [];
-
-const Employee = require("./classes/employee");
-const Role = require("./classes/role");
-const Department = require("./classes/department");
-
-
+var figlet = require('figlet');
 
 // make the connections
 var connection = mysql.createConnection({
@@ -33,11 +24,16 @@ connection.connect(function (err) {
     if (err) throw err;
     console.log("connected as id " + connection.threadId);
     console.log("successful connection");
+    displayBigLogo("===============")
+    displayBigLogo("<---Employee\nManager---->");
+    displayBigLogo("===============");
     start();
 
 });
 
 function start() {
+
+
     inquirer.prompt([
         {
             type: "list",
@@ -101,8 +97,6 @@ function endChoice() {
 
 }
 
-
-// TODO: add employee (connect to role_Id, manager_id)
 function addEmployee() {
     // get list of role titles and list of role objects (with title and id)
     const roleTitlesArr = [];
@@ -221,10 +215,6 @@ function addEmployee() {
         })
 }
 
-
-
-
-// add department with auto dept. number at each entry
 function addDepartment() {
     inquirer.prompt([
         {
@@ -250,7 +240,6 @@ function addDepartment() {
 
 
 }
-
 
 function addRole() {
     // get all dept names into array of key/value pairs
@@ -323,4 +312,13 @@ function viewDepts() {
         console.log(res);
         endChoice();
     });
+}
+
+function displayBigLogo(string){
+    console.log(figlet.textSync(string, {
+        font: 'Colossal',
+        horizontalLayout: 'fitted',
+        verticalLayout: 'default'
+    }));
+
 }
