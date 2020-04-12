@@ -19,7 +19,7 @@ var figlet = require('figlet');
 // });
 
 console.log(figlet.textSync('<---Employee\nManager--->', {
-    font: 'Colossal',
+    font: 'Standard',
     horizontalLayout: 'fitted',
     verticalLayout: 'default'
 }));

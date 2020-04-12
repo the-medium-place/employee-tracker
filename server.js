@@ -1,7 +1,6 @@
 const inquirer = require("inquirer");
 const mysql = require("mysql");
 const table = require("console.table");
-
 var figlet = require('figlet');
 
 // make the connections
@@ -24,21 +23,24 @@ connection.connect(function (err) {
     if (err) throw err;
     console.log("connected as id " + connection.threadId);
     console.log("successful connection");
-    displayBigLogo("===============")
-    displayBigLogo("<---Employee\nManager---->");
-    displayBigLogo("===============");
+    console.clear();
     start();
 
 });
 
+
 function start() {
+    console.clear();
+    displayBigLogo("---------------")
+    displayBigLogo("<---Employee\nManager---->");
+    displayBigLogo("---------------");
 
 
     inquirer.prompt([
         {
             type: "list",
             message: "What would you like to do?",
-            choices: ["Add Employee", "Delete Employee", "Add Role", "Add Department", "View All Departments", "View all Roles", "View All Employees", "Quit"],
+            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View all Employees", "Update Employee Role", "Quit"],
             name: "startChoice"
         }
     ])
@@ -64,7 +66,19 @@ function start() {
                     break;
 
                 case "View All Departments":
-                    viewDepts();
+                    viewAllDepts();
+                    break;
+
+                case "View All Roles":
+                    viewAllRoles();
+                    break;
+
+                case "View all Employees":
+                    viewAllEmployees();
+                    break;
+
+                case "Update Employee Role":
+                    updateEmployeeRole();
                     break;
 
                 default:
@@ -73,9 +87,9 @@ function start() {
                     break;
             }
         })
-}
+};
 
-
+// user option to restart or quit
 function endChoice() {
 
     inquirer.prompt([
@@ -95,9 +109,14 @@ function endChoice() {
         })
 
 
-}
+};
 
+//======================
+// BEGIN USER ACTION FUNCTIONS
+//======================
 function addEmployee() {
+    console.clear();
+    displaySmallLogo("Add Employee");
     // get list of role titles and list of role objects (with title and id)
     const roleTitlesArr = [];
     const roleInfoArr = [];
@@ -187,11 +206,11 @@ function addEmployee() {
             let roleId;
             for (i in roleInfoArr) {
                 if (answers.role_id === roleInfoArr[i].title) {
-                    
+
                     roleId = roleInfoArr[i].id;
                 }
             }
-           
+
             // add new employee to database using all gathered information
 
             if (answers.manager_bool = true) {
@@ -213,9 +232,11 @@ function addEmployee() {
                 })
             }
         })
-}
+};
 
 function addDepartment() {
+    console.clear();
+    displaySmallLogo("Add Department");
     inquirer.prompt([
         {
             type: "input",
@@ -226,22 +247,18 @@ function addDepartment() {
         .then((answers) => {
             connection.query("INSERT INTO department (name) VALUES (?)", [answers.deptName], (err, res) => {
                 if (err) throw err;
-                console.log(`New Department "${answers.deptName}" created with ID # ${res.insertId}`);
-
-                // create new department class object
-                // let newDept = new Department(res.insertId, answers.deptName);
-
-                // push new dept object to storage array
-                allDepartments.push(newDept);
+                console.log(`"${answers.deptName}" Added as new Department`);
 
                 endChoice();
             })
         })
 
 
-}
+};
 
 function addRole() {
+    console.clear();
+    displaySmallLogo("Add Role");
     // get all dept names into array of key/value pairs
     const deptArr = [];
 
@@ -302,23 +319,93 @@ function addRole() {
                 })
             })
     })
-}
+};
 
-
-
-function viewDepts() {
-    connection.query("SELECT * FROM department", (res, err) => {
+function viewAllDepts() {
+    console.clear();
+    displaySmallLogo("Departments:");
+    connection.query(`SELECT name AS "Current Department List" FROM department`, (err, res) => {
         if (err) throw err;
-        console.log(res);
+        console.table(res);
         endChoice();
-    });
-}
+    })
 
-function displayBigLogo(string){
+};
+
+function viewAllRoles() {
+    console.clear();
+    displaySmallLogo("Roles:");
+    connection.query(`SELECT title AS "Current Roles List", department.name AS Department, salary AS "Base Salary" FROM role JOIN department ON role.department_id = department.id ORDER BY department.name`, (err, res) => {
+        if (err) throw err;
+        console.table(res);
+        endChoice();
+    })
+
+
+};
+
+function viewAllEmployees() {
+    console.clear();
+    displaySmallLogo("Employees:");
+    connection.query(`SELECT employee.id, first_name, last_name, salary, manager_id, department.name, role.title FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id ORDER BY department.name;`, (err, res) => {
+        if (err) throw err;
+
+        const newEmpArr = [];
+        for (i in res) {
+            const newObj = {};
+            // create new object for info after it has been arranged
+            newObj.Name = `${res[i].first_name} ${res[i].last_name}`;
+            newObj.Role = res[i].title;
+            newObj.Department = res[i].name;
+            newObj.Salary = `$${res[i].salary}.00 / Year`;
+            for (j in res) {
+                if (res[i].manager_id === res[j].id) {
+                    newObj.Manager = `${res[j].first_name} ${res[j].last_name}`;
+                }
+            }
+            // push new object to array
+            newEmpArr.push(newObj);
+
+        }
+        // display formatted table
+        console.table(newEmpArr);
+        endChoice();
+    })
+
+};
+
+// TODO: write this function!
+function updateEmployeeRole() {
+    console.clear();
+    displaySmallLogo("Update Role");
+    
+    
+    
+    endChoice();
+    
+};
+
+
+
+//======================
+// BEGIN ASCII STYLE FUNCTIONS
+//======================
+
+// Big Main Logo Ascii Font
+function displayBigLogo(string) {
     console.log(figlet.textSync(string, {
         font: 'Colossal',
         horizontalLayout: 'fitted',
         verticalLayout: 'default'
     }));
 
+}
+
+// Small logo ascii font
+function displaySmallLogo(string) {
+    console.log(figlet.textSync(string, {
+        font: 'Standard',
+        horizontalLayout: 'fitted',
+        verticalLayout: 'default'
+    }));
 }
