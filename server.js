@@ -17,7 +17,6 @@ var connection = mysql.createConnection({
     database: "employees_db"
 });
 
-
 // what to do with connection
 connection.connect(function (err) {
     if (err) throw err;
@@ -27,7 +26,7 @@ connection.connect(function (err) {
 
 });
 
-
+// Display Logo and get Initial Action Choice
 function start() {
     console.clear();
     displayBigLogo("---------------")
@@ -39,7 +38,7 @@ function start() {
         {
             type: "list",
             message: "What would you like to do?",
-            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View all Employees", "Update Employee Manager", "Quit"],
+            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees", "Update Employee Manager", "Update Employee Role", "Quit"],
             name: "startChoice"
         }
     ])
@@ -82,6 +81,14 @@ function start() {
                     updateManager();
                     break;
 
+                case "Update Employee Role":
+                    updateEmployeeRole();
+                    break;
+
+                case "View All Roles by Department":
+                    viewRolesByDept();
+                    break;
+
                 default:
                     console.log("Please enter a valid answer")
                     start();
@@ -90,7 +97,11 @@ function start() {
         })
 };
 
-// user option to restart or quit
+//======================
+// BEGIN USER ACTION FUNCTIONS
+//======================
+
+// end of each function - go back or quit?
 function endChoice() {
 
     inquirer.prompt([
@@ -105,19 +116,17 @@ function endChoice() {
             if (answer.endChoice === "Back to Start") {
                 start();
             } else {
+                console.clear();
+                displaySmallLogo("Goodbye!");
                 connection.end();
             }
         })
-
-
 };
 
-//======================
-// BEGIN USER ACTION FUNCTIONS
-//======================
 function addEmployee() {
     console.clear();
     displaySmallLogo("Add Employee");
+
     // get list of role titles and list of role objects (with title and id)
     const roleTitlesArr = [];
     const roleInfoArr = [];
@@ -133,106 +142,111 @@ function addEmployee() {
             roleInfoArr.push(newRoleObj);
             roleTitlesArr.push(res[i].title);
         }
-    })
 
-    // get list of employee names  and list of employe objects (with name and id)
-    const empNamesArr = [];
-    const empInfoArr = [];
 
-    connection.query("SELECT id, first_name, last_name FROM employee", (err, res) => {
-        if (err) throw err;
+        // get list of employee names  and list of employe objects (with name and id)
+        const empNamesArr = [];
+        const empInfoArr = [];
 
-        for (i in res) {
-            const newEmpObj = {};
-            newEmpObj.id = res[i].id;
+        connection.query("SELECT id, first_name, last_name FROM employee", (err, res) => {
+            if (err) throw err;
 
-            const fullName = `${res[i].first_name} ${res[i].last_name}`;
-            newEmpObj.name = fullName;
+            for (i in res) {
+                const newEmpObj = {};
+                newEmpObj.id = res[i].id;
 
-            empInfoArr.push(newEmpObj);
-            empNamesArr.push(fullName);
+                const fullName = `${res[i].first_name} ${res[i].last_name}`;
+                newEmpObj.name = fullName;
 
-        }
-    })
+                empInfoArr.push(newEmpObj);
+                empNamesArr.push(fullName);
 
-    // get user input
-    inquirer.prompt([
-        {
-            type: "input",
-            message: "Enter Employee First Name: ",
-            name: "first_name"
-        },
-        {
-            type: "input",
-            message: "Enter Employee Last Name: ",
-            name: "last_name"
-        },
-        {
-            type: "list",
-            message: "Enter New Employee Role: ",
-            choices: roleTitlesArr,
-            name: "role_id"
-        },
-        {
-            type: "confirm",
-            message: "Enter Manager for New Employee?",
-            name: "manager_bool"
-        },
-        {
-            type: "list",
-            message: "Select Manager for New Employee:",
-            choices: empNamesArr,
-            name: "manager_name",
-            when: function (answers) {
-                if (answers.manager_bool === true) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        }
-    ])
-        .then((answers) => {
-
-            // get manager id from name given
-            let managerId;
-            for (i in empInfoArr) {
-                if (empInfoArr[i].name === answers.manager_name) {
-
-                    managerId = empInfoArr[i].id;
-                }
             }
 
-            // get role id from title given
-            let roleId;
-            for (i in roleInfoArr) {
-                if (answers.role_id === roleInfoArr[i].title) {
 
-                    roleId = roleInfoArr[i].id;
+            // get user input
+            inquirer.prompt([
+                {
+                    type: "input",
+                    message: "Enter Employee First Name: ",
+                    name: "first_name"
+                },
+                {
+                    type: "input",
+                    message: "Enter Employee Last Name: ",
+                    name: "last_name"
+                },
+                {
+                    type: "list",
+                    message: "Enter New Employee Role: ",
+                    choices: roleTitlesArr,
+                    name: "role_id"
+                },
+                {
+                    type: "confirm",
+                    message: "Enter Manager for New Employee?",
+                    name: "manager_bool"
+                },
+                {
+                    type: "list",
+                    message: "Select Manager for New Employee:",
+                    choices: empNamesArr,
+                    name: "manager_name",
+                    when: function (answers) {
+                        if (answers.manager_bool === true) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
                 }
-            }
+            ])
+                .then((answers) => {
 
-            // add new employee to database using all gathered information
+                    // get manager id from name given
+                    let managerId;
+                    for (i in empInfoArr) {
+                        if (empInfoArr[i].name === answers.manager_name) {
 
-            if (answers.manager_bool = true) {
+                            managerId = empInfoArr[i].id;
+                        }
+                    }
 
-                connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [answers.first_name, answers.last_name, roleId, managerId], (err, res) => {
-                    if (err) throw err;
-                    console.log("Employee Added Successfully");
+                    // get role id from title given
+                    let roleId;
+                    for (i in roleInfoArr) {
+                        if (answers.role_id === roleInfoArr[i].title) {
 
-                    endChoice();
+                            roleId = roleInfoArr[i].id;
+                        }
+                    }
+
+                    // add new employee to database using all gathered information
+
+                    if (answers.manager_bool = true) {
+
+                        connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [answers.first_name, answers.last_name, roleId, managerId], (err, res) => {
+                            if (err) throw err;
+                            console.log("Employee Added Successfully");
+
+                            endChoice();
+                        })
+
+                    } else {
+
+                        connection.query("INSERT INTO employee (first_name, last_name, role_id) VALUES (?, ?, ?)", [answers.first_name, answers.last_name, roleId], (err, res) => {
+                            if (err) throw err;
+                            console.log("Employee Added Successfully")
+
+                            endChoice();
+                        })
+                    }
                 })
 
-            } else {
-
-                connection.query("INSERT INTO employee (first_name, last_name, role_id) VALUES (?, ?, ?)", [answers.first_name, answers.last_name, roleId], (err, res) => {
-                    if (err) throw err;
-                    console.log("Employee Added Successfully")
-
-                    endChoice();
-                })
-            }
         })
+    })
+    // here and here
+
 };
 
 function addDepartment() {
@@ -296,27 +310,16 @@ function addRole() {
 
                 // capture department ID of user choice for use in SQL query
                 let dept_id;
-                console.log(deptArr[2].name);
-                console.log(answers.deptName);
                 for (i in deptArr) {
                     if (deptArr[i].name === answers.deptName) {
-
                         dept_id = deptArr[i].id;
-                        console.log(dept_id);
-                        endChoice();
-
                     }
                 }
-
                 // add info to SQL database 
                 connection.query("INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)", [answers.roleName, answers.salary, dept_id], (err, res) => {
                     if (err) throw err;
-                    console.log(res);
                     console.log("Role Added");
-
                     endChoice();
-
-
                 })
             })
     })
@@ -375,32 +378,18 @@ function viewAllEmployees() {
 
 };
 
-
-
-
-
-
-
-// TODO: write this function!
 function updateManager() {
     console.clear();
     displaySmallLogo("Update Role");
-    
-    let empObjs;
 
     //capture list of employee names
     const nameList = [];
     connection.query("SELECT id, first_name, last_name, manager_id FROM employee", (err, res) => {
         if (err) throw err;
-        // empObjs.push(res);
         for (i in res) {
-            
             nameList.push(`${res[i].first_name} ${res[i].last_name}`);
-
         }
-        empObjs = res;
-        // console.log(empObjs);
-     
+
         // capture employee to update with inquirer
         inquirer.prompt([
             {
@@ -417,25 +406,17 @@ function updateManager() {
             }
         ])
             .then((answers) => {
-
                 //  capture new manager ID # for use in emp schema
-        
-                let managerId;        
+                let managerId;
                 for (i in res) {
                     if (`${res[i].first_name} ${res[i].last_name}` === answers.newManager) {
-             
                         managerId = res[i].id;
                     }
                 }
-                console.log(managerId);
-
                 if (answers.empChoice === answers.newManager) {
-
                     console.log("Employee and Manager Cannot Match!\nPlease Try Again...");
                     updateManager();
-
                 } else {
-
                     connection.query(`UPDATE employee SET manager_id = ? WHERE CONCAT(first_name, " ", last_name) = ?`, [managerId, answers.empChoice], (err, res) => {
                         if (err) throw err;
                         console.log("Employee Manager Successfully Updated");
@@ -446,68 +427,120 @@ function updateManager() {
     })
 };
 
-
-
-
-// TODO: Write this function!
 function updateEmployeeRole() {
+    console.clear();
+    displaySmallLogo("Update Role");
+
+    // get list of employee names  and list of employe objects (with name and id)
+    const empNamesArr = [];
+    let empInfoArr;
+
+    // get list of role titles and list of role objects (with title and id)
+    const roleTitlesArr = [];
+    let roleInfoArr;
 
 
 
-    //capture list of employee names
-    const empNames = [];
-    const empObjs = [];
-    connection.query("SELECT id, first_name, last_name, manager_id FROM employee", (err, res) => {
+    connection.query("SELECT id, title FROM role", (err, roleData) => {
         if (err) throw err;
-        for (i in res) {
-            empNames.push(`${res[i].first_name} ${res[i].last_name}`)
+        for (j in roleData) {
+            roleTitlesArr.push(roleData[j].title)
+        }
 
+
+
+        // info from employee table
+        connection.query("SELECT id, first_name, last_name FROM employee", (err, empData) => {
             if (err) throw err;
-            for (i in res) {
-                empNames.push(`${res[i].first_name} ${res[i].last_name}`)
+            for (i in empData) {
+                empInfoArr = empData;
+                const fullName = `${empData[i].first_name} ${empData[i].last_name}`;
 
-                // get manager name from id provided
-                for (j in res) {
-                    if (res[i].manager_id === res[j].id) {
-                        // newObj.Manager = `${res[j].first_name} ${res[j].last_name}`;
+                empNamesArr.push(fullName);
+
+                roleInfoArr = empData;
+            }
+            // inquire for employee to update using list of names
+            inquirer.prompt([
+                {
+                    type: "list",
+                    message: "Select Employee for Role Change",
+                    choices: empNamesArr,
+                    name: "empChoice"
+                },
+                // inquire for new role using list of roles
+                {
+                    type: "list",
+                    message: "Select New Role for Employee",
+                    choices: roleTitlesArr,
+                    name: "newRole"
+                }
+            ])
+                .then((answers) => {
+                    // get id for role entered
+                    let roleId;
+                    for (i in roleData) {
+                        if (roleData[i].title === answers.newRole) {
+                            roleId = roleData[i].id;
+                        }
                     }
+                    console.log("new role id: " + roleId);
+                    // then update employee role
+                    connection.query(`UPDATE employee SET role_id = ? WHERE CONCAT(first_name, " ", last_name) = ?`, [roleId, answers.empChoice], (err, res) => {
+                        if (err) throw err;
+                        console.log("Employee Roll Updated Successfully");
+                        endChoice();
+                    })
+                })
+
+        })
+    })
+
+};
+
+function viewRolesByDept () {
+    console.clear();
+    displaySmallLogo("Roles by Department");
+
+
+    // get list of department names, ids (query for all info from department table)
+    connection.query("SELECT id, name FROM department;", (err, res) =>{
+        const deptNames = [];
+        for (i in res){
+            deptNames.push(res[i].name);
+        }
+        // inquire for department from list
+        inquirer.prompt([
+            {
+                type: "list",
+                message: "Select Department to view Roles",
+                choices: deptNames,
+                name: "deptName"
+            }
+        ])
+        .then((answer) => {
+            // get id of selected department
+            let deptId;
+            for(j in res){
+                if(answer.deptName === res[j].name){
+                    deptId = res[j].id;
                 }
             }
+            // get all roles with matching dept number
+         
+            connection.query("SELECT title, salary FROM role WHERE department_id = ?", [deptId], (err, roleData) => {
+                console.table(roleData);
+                endChoice();
 
-        }
-
-        empObjs.push(res);
-        console.log(empNames);
-
-    })
-    if (err) throw err;
-    for (i in res) {
-        empNames.push(`${res[i].first_name} ${res[i].last_name}`)
-
-        // get manager name from id provided
-        for (j in res) {
-            if (res[i].manager_id === res[j].id) {
-                // newObj.Manager = `${res[j].first_name} ${res[j].last_name}`;
-            }
-        }
-    }
-    empObjs.push(res);
-    console.log(empNames);
-
-    // capture employee to update
-
-    // capture user action (add/delete/change manager)
-
-    // if delete, delete manager leaving black
-
-    // if add, add manager from list of current employees
-
-    // if update, change manager from list of current employees
-
-    endChoice();
-}
+            })//end of second connection query
 
 
+        })//end of inquirer section
+    })//end of first connection query
+
+
+
+};
 
 
 
