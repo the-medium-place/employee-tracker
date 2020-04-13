@@ -1,30 +1,10 @@
 const inquirer = require("inquirer");
 const mysql = require("mysql");
 const table = require("console.table");
-var figlet = require('figlet');
+const figlet = require('figlet');
+const db = require("./db");
 
-// make the connections
-var connection = mysql.createConnection({
-    host: "localhost",
 
-    port: 3306,
-
-    // Your username
-    user: "root",
-
-    // Your password
-    password: "password",
-    database: "employees_db"
-});
-
-// what to do with connection
-connection.connect(function (err) {
-    if (err) throw err;
-    console.log("connected as id " + connection.threadId);
-    console.clear();
-    start();
-
-});
 
 // Display Logo and get Initial Action Choice
 function start() {
@@ -348,33 +328,45 @@ function viewAllRoles() {
 
 };
 
-function viewAllEmployees() {
-    console.clear();
+async function viewAllEmployees() {
+       console.clear();
     displaySmallLogo("Employees:");
-    connection.query(`SELECT employee.id, first_name, last_name, salary, manager_id, department.name, role.title FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id ORDER BY department.name;`, (err, res) => {
-        if (err) throw err;
 
-        const newEmpArr = [];
-        for (i in res) {
-            const newObj = {};
-            // create new object for info after it has been arranged
-            newObj.Name = `${res[i].first_name} ${res[i].last_name}`;
-            newObj.Role = res[i].title;
-            newObj.Department = res[i].name;
-            newObj.Salary = `$${res[i].salary}.00 / Year`;
-            for (j in res) {
-                if (res[i].manager_id === res[j].id) {
-                    newObj.Manager = `${res[j].first_name} ${res[j].last_name}`;
-                }
-            }
-            // push new object to array
-            newEmpArr.push(newObj);
+    const employees = await db.findAllEmployees();
 
-        }
-        // display formatted table
-        console.table(newEmpArr);
-        endChoice();
-    })
+    console.table(employees);
+
+
+
+
+
+
+    // console.clear();
+    // displaySmallLogo("Employees:");
+    // connection.query(`SELECT employee.id, first_name, last_name, salary, manager_id, department.name, role.title FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id ORDER BY department.name;`, (err, res) => {
+    //     if (err) throw err;
+
+    //     const newEmpArr = [];
+    //     for (i in res) {
+    //         const newObj = {};
+    //         // create new object for info after it has been arranged
+    //         newObj.Name = `${res[i].first_name} ${res[i].last_name}`;
+    //         newObj.Role = res[i].title;
+    //         newObj.Department = res[i].name;
+    //         newObj.Salary = `$${res[i].salary}.00 / Year`;
+    //         for (j in res) {
+    //             if (res[i].manager_id === res[j].id) {
+    //                 newObj.Manager = `${res[j].first_name} ${res[j].last_name}`;
+    //             }
+    //         }
+    //         // push new object to array
+    //         newEmpArr.push(newObj);
+
+    //     }
+    //     // display formatted table
+    //     console.table(newEmpArr);
+    //     endChoice();
+    // })
 
 };
 
@@ -568,3 +560,6 @@ function displaySmallLogo(string) {
         verticalLayout: 'default'
     }));
 }
+
+
+start();
