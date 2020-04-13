@@ -22,7 +22,6 @@ var connection = mysql.createConnection({
 connection.connect(function (err) {
     if (err) throw err;
     console.log("connected as id " + connection.threadId);
-    console.log("successful connection");
     console.clear();
     start();
 
@@ -40,7 +39,7 @@ function start() {
         {
             type: "list",
             message: "What would you like to do?",
-            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View all Employees", "Update Employee Role", "Quit"],
+            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View all Employees", "Update Employee Manager", "Quit"],
             name: "startChoice"
         }
     ])
@@ -48,8 +47,10 @@ function start() {
         // Initial List of Options
         .then((answer) => {
             switch (answer.startChoice) {
+
                 case "Quit":
-                    console.log("Thanks for using my program!");
+                    console.clear();
+                    displaySmallLogo("Goodbye!");
                     connection.end();
                     break;
 
@@ -77,8 +78,8 @@ function start() {
                     viewAllEmployees();
                     break;
 
-                case "Update Employee Role":
-                    updateEmployeeRole();
+                case "Update Employee Manager":
+                    updateManager();
                     break;
 
                 default:
@@ -374,16 +375,141 @@ function viewAllEmployees() {
 
 };
 
+
+
+
+
+
+
 // TODO: write this function!
-function updateEmployeeRole() {
+function updateManager() {
     console.clear();
     displaySmallLogo("Update Role");
     
-    
-    
-    endChoice();
-    
+    let empObjs;
+
+    //capture list of employee names
+    const nameList = [];
+    connection.query("SELECT id, first_name, last_name, manager_id FROM employee", (err, res) => {
+        if (err) throw err;
+        // empObjs.push(res);
+        for (i in res) {
+            
+            nameList.push(`${res[i].first_name} ${res[i].last_name}`);
+
+        }
+        empObjs = res;
+        // console.log(empObjs);
+     
+        // capture employee to update with inquirer
+        inquirer.prompt([
+            {
+                type: "list",
+                message: "Select Employee to Update:",
+                choices: nameList,
+                name: "empChoice"
+            },
+            {
+                type: "list",
+                message: `Select New Manager for this Employee`,
+                choices: nameList,
+                name: "newManager"
+            }
+        ])
+            .then((answers) => {
+
+                //  capture new manager ID # for use in emp schema
+        
+                let managerId;        
+                for (i in res) {
+                    if (`${res[i].first_name} ${res[i].last_name}` === answers.newManager) {
+             
+                        managerId = res[i].id;
+                    }
+                }
+                console.log(managerId);
+
+                if (answers.empChoice === answers.newManager) {
+
+                    console.log("Employee and Manager Cannot Match!\nPlease Try Again...");
+                    updateManager();
+
+                } else {
+
+                    connection.query(`UPDATE employee SET manager_id = ? WHERE CONCAT(first_name, " ", last_name) = ?`, [managerId, answers.empChoice], (err, res) => {
+                        if (err) throw err;
+                        console.log("Employee Manager Successfully Updated");
+                        endChoice();
+                    })
+                }
+            })
+    })
 };
+
+
+
+
+// TODO: Write this function!
+function updateEmployeeRole() {
+
+
+
+    //capture list of employee names
+    const empNames = [];
+    const empObjs = [];
+    connection.query("SELECT id, first_name, last_name, manager_id FROM employee", (err, res) => {
+        if (err) throw err;
+        for (i in res) {
+            empNames.push(`${res[i].first_name} ${res[i].last_name}`)
+
+            if (err) throw err;
+            for (i in res) {
+                empNames.push(`${res[i].first_name} ${res[i].last_name}`)
+
+                // get manager name from id provided
+                for (j in res) {
+                    if (res[i].manager_id === res[j].id) {
+                        // newObj.Manager = `${res[j].first_name} ${res[j].last_name}`;
+                    }
+                }
+            }
+
+        }
+
+        empObjs.push(res);
+        console.log(empNames);
+
+    })
+    if (err) throw err;
+    for (i in res) {
+        empNames.push(`${res[i].first_name} ${res[i].last_name}`)
+
+        // get manager name from id provided
+        for (j in res) {
+            if (res[i].manager_id === res[j].id) {
+                // newObj.Manager = `${res[j].first_name} ${res[j].last_name}`;
+            }
+        }
+    }
+    empObjs.push(res);
+    console.log(empNames);
+
+    // capture employee to update
+
+    // capture user action (add/delete/change manager)
+
+    // if delete, delete manager leaving black
+
+    // if add, add manager from list of current employees
+
+    // if update, change manager from list of current employees
+
+    endChoice();
+}
+
+
+
+
 
 
 
