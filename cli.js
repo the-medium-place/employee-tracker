@@ -38,7 +38,7 @@ function start() {
         {
             type: "list",
             message: "What would you like to do?",
-            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees", "Update Employee Manager", "Update Employee Role", "Quit"],
+            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees","View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Quit"],
             name: "startChoice"
         }
     ])
@@ -87,6 +87,10 @@ function start() {
 
                 case "View All Roles by Department":
                     viewRolesByDept();
+                    break;
+
+                case "View Employee by Manager":
+                    viewEmployeesByManager();
                     break;
 
                 default:
@@ -542,7 +546,62 @@ function viewRolesByDept () {
 
 };
 
+function viewEmployeesByManager () {
+    // get list of employees who are managers
+    connection.query("SELECT id, first_name, last_name, manager_id FROM employee", (err, empData) => {
+        if (err) throw err;
 
+        const manIdList = [];
+        const manNameList = [];
+        for (i in empData){ 
+            
+            // manIdList.push(empData[i].manager_id);
+            if(empData[i].manager_id) manIdList.push(empData[i].manager_id);
+
+            for (j in empData){
+                // if manager id equals any employee ids
+                if(empData[j].manager_id === empData[i].id){
+                    
+                    manNameList.push(`${empData[i].first_name} ${empData[i].last_name}`);
+                }
+            }
+        }
+
+        inquirer.prompt([
+            {
+                // inquire for manager to view
+                type: "list",
+                message: "Select Manager to view Employees",
+                choices: manNameList,
+                name: "managerChoice"
+            }
+        ])
+        .then((answer) => {
+            let manId;
+            for (k in empData){
+                if (answer.managerChoice === `${empData[k].first_name} ${empData[k].last_name}`){
+                    manId = empData[k].id;
+                }
+            }
+            console.log(manId);
+
+            connection.query(`SELECT first_name AS "First Name", last_name AS "Last Name", title AS "Role", department.name AS "Department", salary AS "Salary" FROM employee JOIN role ON role_id = role.id JOIN department ON role.department_id = department.id WHERE employee.manager_id = ?`,[manId], (err, res) => {
+                if (err) throw err;
+
+                console.table(res);
+                endChoice();
+            })
+
+
+        })
+        
+
+
+    })//end of first connection query
+
+
+    // get list of employees 
+}
 
 
 
