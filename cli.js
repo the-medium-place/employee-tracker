@@ -38,7 +38,7 @@ function start() {
         {
             type: "list",
             message: "What would you like to do?",
-            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees","View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Quit"],
+            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees","View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Get Utilized Budget by Department", "Quit"],
             name: "startChoice"
         }
     ])
@@ -93,6 +93,10 @@ function start() {
                     viewEmployeesByManager();
                     break;
 
+                case "Get Utilized Budget by Department":
+                    getUtilizedBudget();
+                    break;
+
                 default:
                     console.log("Please enter a valid answer")
                     start();
@@ -100,10 +104,6 @@ function start() {
             }
         })
 };
-
-//======================
-// BEGIN USER ACTION FUNCTIONS
-//======================
 
 // end of each function - go back or quit?
 function endChoice() {
@@ -126,6 +126,10 @@ function endChoice() {
             }
         })
 };
+
+//======================
+// BEGIN USER ACTION FUNCTIONS
+//======================
 
 function addEmployee() {
     console.clear();
@@ -547,6 +551,9 @@ function viewRolesByDept () {
 };
 
 function viewEmployeesByManager () {
+    console.clear();
+    displaySmallLogo("Employee Lookup");
+
     // get list of employees who are managers
     connection.query("SELECT id, first_name, last_name, manager_id FROM employee", (err, empData) => {
         if (err) throw err;
@@ -583,7 +590,6 @@ function viewEmployeesByManager () {
                     manId = empData[k].id;
                 }
             }
-            console.log(manId);
 
             connection.query(`SELECT first_name AS "First Name", last_name AS "Last Name", title AS "Role", department.name AS "Department", salary AS "Salary" FROM employee JOIN role ON role_id = role.id JOIN department ON role.department_id = department.id WHERE employee.manager_id = ?`,[manId], (err, res) => {
                 if (err) throw err;
@@ -591,16 +597,55 @@ function viewEmployeesByManager () {
                 console.table(res);
                 endChoice();
             })
-
-
         })
-        
+    })
+}
+
+function getUtilizedBudget () {
+    console.clear();
+    displaySmallLogo("Dept Budget");
 
 
-    })//end of first connection query
+    // get count for each role
+    connection.query(`SELECT COUNT(role_id) AS role_count, title, salary, name FROM employee JOIN role ON role_id = role.id JOIN department ON department_id = department.id GROUP BY title;`, (err, res) => {
+        // add up cost for each role
+        const totalCostObjs = [];
+        const deptList = [];
+        for (i in res){
+            const newObj = {};
+            newObj.role = res[i].title;
+            newObj.total_cost = res[i].salary*res[i].role_count;
+            newObj.dept = res[i].name;
+            totalCostObjs.push(newObj);
+            deptList.push(res[i].name);
+
+        }
+        inquirer.prompt([
+            {
+                type: "list",
+                message: "Select Department to view Utilized Budget",
+                choices: deptList,
+                name: "deptChoice"
+            }
+        ])
+        .then((answer) => {
+            let totalBudget = 0;
+            for(j in totalCostObjs){
+                if (totalCostObjs[j].dept === answer.deptChoice){
+                    totalBudget += totalCostObjs[j].total_cost;                    
+                }
+                
+            }
+            console.table([{Department: answer.deptChoice, Budget: totalBudget}]);
+            endChoice();
+        })
+    })
+
+    
 
 
-    // get list of employees 
+    // separate roles by department
+
 }
 
 
