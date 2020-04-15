@@ -1,6 +1,6 @@
 const inquirer = require("inquirer");
 const mysql = require("mysql");
-const table = require("console.table");
+require("console.table");
 var figlet = require('figlet');
 
 // make the connections
@@ -29,16 +29,14 @@ connection.connect(function (err) {
 // Display Logo and get Initial Action Choice
 function start() {
     console.clear();
-    displayBigLogo("---------------")
-    displayBigLogo("<---Employee\nManager---->");
-    displayBigLogo("---------------");
+    displayBigLogo("\n<Employee\n  Manager>");
 
 
     inquirer.prompt([
         {
             type: "list",
             message: "What would you like to do?",
-            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees","View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Get Utilized Budget by Department", "Quit"],
+            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees", "View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Get Utilized Budget by Department", "Delete Employee", "Quit"],
             name: "startChoice"
         }
     ])
@@ -95,6 +93,10 @@ function start() {
 
                 case "Get Utilized Budget by Department":
                     getUtilizedBudget();
+                    break;
+
+                case "Delete Employee":
+                    deleteEmployee();
                     break;
 
                 default:
@@ -369,7 +371,7 @@ function viewAllEmployees() {
             newObj.Name = `${res[i].first_name} ${res[i].last_name}`;
             newObj.Role = res[i].title;
             newObj.Department = res[i].name;
-            newObj.Salary = `$${res[i].salary}.00 / Year`;
+            newObj.Salary = `$${res[i].salary} / Year`;
             for (j in res) {
                 if (res[i].manager_id === res[j].id) {
                     newObj.Manager = `${res[j].first_name} ${res[j].last_name}`;
@@ -506,15 +508,15 @@ function updateEmployeeRole() {
 
 };
 
-function viewRolesByDept () {
+function viewRolesByDept() {
     console.clear();
     displaySmallLogo("Roles by Department");
 
 
     // get list of department names, ids (query for all info from department table)
-    connection.query("SELECT id, name FROM department;", (err, res) =>{
+    connection.query("SELECT id, name FROM department;", (err, res) => {
         const deptNames = [];
-        for (i in res){
+        for (i in res) {
             deptNames.push(res[i].name);
         }
         // inquire for department from list
@@ -526,31 +528,31 @@ function viewRolesByDept () {
                 name: "deptName"
             }
         ])
-        .then((answer) => {
-            // get id of selected department
-            let deptId;
-            for(j in res){
-                if(answer.deptName === res[j].name){
-                    deptId = res[j].id;
+            .then((answer) => {
+                // get id of selected department
+                let deptId;
+                for (j in res) {
+                    if (answer.deptName === res[j].name) {
+                        deptId = res[j].id;
+                    }
                 }
-            }
-            // get all roles with matching dept number
-         
-            connection.query("SELECT title, salary FROM role WHERE department_id = ?", [deptId], (err, roleData) => {
-                console.table(roleData);
-                endChoice();
+                // get all roles with matching dept number
 
-            })//end of second connection query
+                connection.query("SELECT title, salary FROM role WHERE department_id = ?", [deptId], (err, roleData) => {
+                    console.table(roleData);
+                    endChoice();
+
+                })//end of second connection query
 
 
-        })//end of inquirer section
+            })//end of inquirer section
     })//end of first connection query
 
 
 
 };
 
-function viewEmployeesByManager () {
+function viewEmployeesByManager() {
     console.clear();
     displaySmallLogo("Employee Lookup");
 
@@ -558,17 +560,17 @@ function viewEmployeesByManager () {
     connection.query("SELECT id, first_name, last_name, manager_id FROM employee", (err, empData) => {
         if (err) throw err;
 
-        const manIdList = [];
+        // const manIdList = [];
         const manNameList = [];
-        for (i in empData){ 
-            
-            // manIdList.push(empData[i].manager_id);
-            if(empData[i].manager_id) manIdList.push(empData[i].manager_id);
+        for (i in empData) {
 
-            for (j in empData){
+            // manIdList.push(empData[i].manager_id);
+            // if (empData[i].manager_id) manIdList.push(empData[i].manager_id);
+
+            for (j in empData) {
                 // if manager id equals any employee ids
-                if(empData[j].manager_id === empData[i].id){
-                    
+                if (empData[j].manager_id === empData[i].id) {
+
                     manNameList.push(`${empData[i].first_name} ${empData[i].last_name}`);
                 }
             }
@@ -583,25 +585,25 @@ function viewEmployeesByManager () {
                 name: "managerChoice"
             }
         ])
-        .then((answer) => {
-            let manId;
-            for (k in empData){
-                if (answer.managerChoice === `${empData[k].first_name} ${empData[k].last_name}`){
-                    manId = empData[k].id;
+            .then((answer) => {
+                let manId;
+                for (k in empData) {
+                    if (answer.managerChoice === `${empData[k].first_name} ${empData[k].last_name}`) {
+                        manId = empData[k].id;
+                    }
                 }
-            }
 
-            connection.query(`SELECT first_name AS "First Name", last_name AS "Last Name", title AS "Role", department.name AS "Department", salary AS "Salary" FROM employee JOIN role ON role_id = role.id JOIN department ON role.department_id = department.id WHERE employee.manager_id = ?`,[manId], (err, res) => {
-                if (err) throw err;
+                connection.query(`SELECT first_name AS "First Name", last_name AS "Last Name", title AS "Role", department.name AS "Department", salary AS "Salary" FROM employee JOIN role ON role_id = role.id JOIN department ON role.department_id = department.id WHERE employee.manager_id = ?`, [manId], (err, res) => {
+                    if (err) throw err;
 
-                console.table(res);
-                endChoice();
+                    console.table(res);
+                    endChoice();
+                })
             })
-        })
     })
-}
+};
 
-function getUtilizedBudget () {
+function getUtilizedBudget() {
     console.clear();
     displaySmallLogo("Dept Budget");
 
@@ -611,10 +613,10 @@ function getUtilizedBudget () {
         // add up cost for each role
         const totalCostObjs = [];
         const deptList = [];
-        for (i in res){
+        for (i in res) {
             const newObj = {};
             newObj.role = res[i].title;
-            newObj.total_cost = res[i].salary*res[i].role_count;
+            newObj.total_cost = res[i].salary * res[i].role_count;
             newObj.dept = res[i].name;
             totalCostObjs.push(newObj);
             deptList.push(res[i].name);
@@ -628,26 +630,110 @@ function getUtilizedBudget () {
                 name: "deptChoice"
             }
         ])
-        .then((answer) => {
-            let totalBudget = 0;
-            for(j in totalCostObjs){
-                if (totalCostObjs[j].dept === answer.deptChoice){
-                    totalBudget += totalCostObjs[j].total_cost;                    
+            .then((answer) => {
+                let totalBudget = 0;
+                for (j in totalCostObjs) {
+                    if (totalCostObjs[j].dept === answer.deptChoice) {
+                        totalBudget += totalCostObjs[j].total_cost;
+                    }
+
                 }
-                
-            }
-            console.table([{Department: answer.deptChoice, Budget: totalBudget}]);
-            endChoice();
-        })
+                console.table([{ Department: answer.deptChoice, Budget: `$${totalBudget}` }]);
+                endChoice();
+            })
     })
 
-    
+
 
 
     // separate roles by department
 
+};
+
+function deleteEmployee() {
+    console.clear();
+    displaySmallLogo("Delete Employee");
+
+    const empNamesArr = [];
+    const manNameList = [];
+
+    // query for employee info (with ids and manager ids)
+    connection.query("SELECT id, first_name, last_name, manager_id FROM employee", (err, empData) => {
+        if (err) throw err;
+        // get list of employees for inquiry
+        for (i in empData) {
+            empNamesArr.push(`${empData[i].first_name} ${empData[i].last_name}`);
+        }
+
+        // get list of employees who are managers
+        for (k in empData) {
+            for (j in empData) {
+                if (empData[j].manager_id === empData[k].id) {
+                    manNameList.push(`${empData[k].first_name} ${empData[k].last_name}`);
+                }
+            }
+        }
+        console.log(empNamesArr);
+        console.log(manNameList);
+    
+        // inquire for employee to delete
+        inquirer.prompt([
+            {
+                type: "list",
+                message: "Select Employee to Delete (Managers cannot be Deleted!)",
+                choices: empNamesArr,
+                name: "delChoice"
+            }
+        ])
+            // compare user choice to manager name list
+            .then((answer) => {
+
+                if(manNameList.includes(answer.delChoice)){
+                    // redirect user if on manager list
+                    console.log(`\n${answer.delChoice} is a Manager and cannot be deleted\nNOTE: To delete a manager, all employees under that manager must be reassigned\n(Select 'Update Employee Manager' on Main Menu\n\n`);
+                    endChoice();
+
+                } else {
+                    console.log("test");
+
+                    // delete employee
+                    connection.query(`DELETE FROM employee WHERE CONCAT(first_name, last_name) = ?`,[answer.delChoice], (err, response) => {
+                        if (err) throw err;
+                        console.log("Employee Successfully Deleted")
+
+                        // send to end choice
+                        endChoice();
+                    })
+                }
+            })// end of inquiry
+    })// end of connection query
 }
 
+function deleteRole() {
+    console.clear();
+    displaySmallLogo("Delete Role");
+
+    //get list of roles with zero employees filled
+
+    // get user role selection
+
+    // delete role from table
+
+    endChoice();
+}
+
+function deleteDepartment() {
+    console.clear();
+    displaySmallLogo("Delete Department");
+
+    //get list of department with zer roles
+
+    // get user department selection
+
+    // delete department from table
+
+    endChoice();
+}
 
 
 //======================
