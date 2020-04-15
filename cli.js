@@ -682,9 +682,7 @@ function deleteEmployee() {
                 }
             }
         }
-        // console.log(empNamesArr);
-        // console.log(manNameList);
-    
+ 
         // inquire for employee to delete
         inquirer.prompt([
             {
@@ -703,7 +701,7 @@ function deleteEmployee() {
                     endChoice();
 
                 } else {
-                    console.log("test");
+                 
                     // get employee id
                     let empId;
             
@@ -712,7 +710,6 @@ function deleteEmployee() {
                             empId = empData[l].id;
                         }
                     }
-                    console.log("employee id: " + empId);
 
                     // delete employee
                     connection.query(`DELETE FROM employee WHERE id = ?`,[empId], (err, response) => {
@@ -743,7 +740,7 @@ function deleteRole() {
                 filledRolesArr.push(roleData[i].title);
             }
         }
-        console.log(filledRolesArr);
+
         // inquire for role to delete
         inquirer.prompt([
             {
@@ -785,8 +782,7 @@ function deleteDepartment() {
                 filledDeptArr.push(deptData[i].name);
             }
         }
-        console.log(deptNameArr);
-        console.log(filledDeptArr);
+
         // inquire for department to delete
         inquirer.prompt([
             {
