@@ -36,7 +36,7 @@ function start() {
         {
             type: "list",
             message: "What would you like to do?",
-            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees", "View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Get Utilized Budget by Department", "Delete Employee", "Delete Role", "Quit"],
+            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees", "View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Get Utilized Budget by Department", "Delete Employee", "Delete Role", "Delete Department", "Quit"],
             name: "startChoice"
         }
     ])
@@ -101,6 +101,10 @@ function start() {
 
                 case "Delete Role":
                     deleteRole();
+                    break;
+
+                case "Delete Department":
+                    deleteDepartment();
                     break;
 
                 default:
@@ -678,8 +682,8 @@ function deleteEmployee() {
                 }
             }
         }
-        console.log(empNamesArr);
-        console.log(manNameList);
+        // console.log(empNamesArr);
+        // console.log(manNameList);
     
         // inquire for employee to delete
         inquirer.prompt([
@@ -700,9 +704,18 @@ function deleteEmployee() {
 
                 } else {
                     console.log("test");
+                    // get employee id
+                    let empId;
+            
+                    for (l in empData){
+                        if (answer.delChoice === `${empData[l].first_name} ${empData[l].last_name}`){
+                            empId = empData[l].id;
+                        }
+                    }
+                    console.log("employee id: " + empId);
 
                     // delete employee
-                    connection.query(`DELETE FROM employee WHERE CONCAT(first_name, last_name) = ?`,[answer.delChoice], (err, response) => {
+                    connection.query(`DELETE FROM employee WHERE id = ?`,[empId], (err, response) => {
                         if (err) throw err;
                         console.log("Employee Successfully Deleted")
 
@@ -712,7 +725,7 @@ function deleteEmployee() {
                 }
             })// end of inquiry
     })// end of connection query
-}
+};
 
 function deleteRole() {
     console.clear();
@@ -756,23 +769,58 @@ function deleteRole() {
             }
         })
     })
-}
-
-
-
+};
 
 function deleteDepartment() {
     console.clear();
-    displaySmallLogo("Delete Department");
+    displaySmallLogo("Delete Dept");
 
-    //get list of department with zer roles
+    // get list of departments and count of roles in dept
+    const deptNameArr = [];
+    const filledDeptArr = [];
+    connection.query(`SELECT name, COUNT(role.id) AS count FROM department LEFT JOIN role ON department_id = department.id GROUP BY name`, (err, deptData) => {
+        for(i in deptData){
+            deptNameArr.push(deptData[i].name);
+            if(deptData[i].count !== 0){
+                filledDeptArr.push(deptData[i].name);
+            }
+        }
+        console.log(deptNameArr);
+        console.log(filledDeptArr);
+        // inquire for department to delete
+        inquirer.prompt([
+            {
+                type: "list",
+                message: "Select Department to Delete. Filled Departments cannot be Deleted!",
+                choices: deptNameArr,
+                name: "deptChoice"
+            }
+        ])
+        // compare choice to list of filled depts
+        .then((answer) => {
+            // redirect if filled dept
+            if(filledDeptArr.includes(answer.deptChoice)){
+                console.log(`\nThe ${answer.deptChoice} department has listed Roles on file and cannot be deleted!\nNOTE: To delete a department, first delete all roles in that department\n(Select 'Delete Role' in Main Menu)\n`);
+                endChoice();
+            } else {
+                // delete if not
+                connection.query(`DELETE FROM department WHERE name = ?`, [answer.deptChoice], (err, res) => {
+                    if (err) throw err;
+                    console.log("Department Successfully Deleted");
+                    endChoice();
+                })
+            }
+        })
+    })// end of connection query
 
-    // get user department selection
+    
 
-    // delete department from table
 
-    endChoice();
-}
+
+
+
+
+};
 
 
 //======================
@@ -787,7 +835,7 @@ function displayBigLogo(string) {
         verticalLayout: 'default'
     }));
 
-}
+};
 
 // Small logo ascii font
 function displaySmallLogo(string) {
@@ -796,4 +844,4 @@ function displaySmallLogo(string) {
         horizontalLayout: 'fitted',
         verticalLayout: 'default'
     }));
-}
+};
