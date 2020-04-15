@@ -36,7 +36,7 @@ function start() {
         {
             type: "list",
             message: "What would you like to do?",
-            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees", "View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Get Utilized Budget by Department", "Delete Employee", "Quit"],
+            choices: ["Add Department", "Add Role", "Add Employee", "View All Departments", "View All Roles", "View All Roles by Department", "View all Employees", "View Employee by Manager", "Update Employee Manager", "Update Employee Role", "Get Utilized Budget by Department", "Delete Employee", "Delete Role", "Quit"],
             name: "startChoice"
         }
     ])
@@ -97,6 +97,10 @@ function start() {
 
                 case "Delete Employee":
                     deleteEmployee();
+                    break;
+
+                case "Delete Role":
+                    deleteRole();
                     break;
 
                 default:
@@ -338,6 +342,7 @@ function addRole() {
 function viewAllDepts() {
     console.clear();
     displaySmallLogo("Departments:");
+
     connection.query(`SELECT name AS "Current Department List" FROM department`, (err, res) => {
         if (err) throw err;
         console.table(res);
@@ -390,7 +395,7 @@ function viewAllEmployees() {
 
 function updateManager() {
     console.clear();
-    displaySmallLogo("Update Role");
+    displaySmallLogo("Update Manager");
 
     //capture list of employee names
     const nameList = [];
@@ -713,14 +718,48 @@ function deleteRole() {
     console.clear();
     displaySmallLogo("Delete Role");
 
-    //get list of roles with zero employees filled
+    // get list of all roles plus ids of employees in that role (and NULL for empty roles)
+    connection.query(`SELECT title, COUNT(employee.id) AS count FROM role LEFT JOIN employee ON role.id = employee.role_id GROUP BY employee.id;`, (err, roleData) => {
+        if (err) throw err;
+        console.table(roleData);
+        const roleTitlesArr = [];
+        const filledRolesArr = [];
+        for (i in roleData){
+            roleTitlesArr.push(`${roleData[i].title}`);
+            if(roleData[i].count !== 0){
+                filledRolesArr.push(roleData[i].title);
+            }
+        }
+        console.log(filledRolesArr);
+        // inquire for role to delete
+        inquirer.prompt([
+            {
+                type: "list",
+                message: "Select Role to Delete. Filled roles cannot be deleted!",
+                choices: roleTitlesArr,
+                name: "roleChoice"
+            }
+        ])
+        // compare choice to list of roles with employees
+        .then((answer) => {
+            if(filledRolesArr.includes(answer.roleChoice)){
+                console.log(`\n\nThe role of ${answer.roleChoice} is filled and cannot be deleted!\nNOTE: To delete a role All employees in that role must be reassigned\nSelect "Update Employee Role" on Main Menu\n`);
+                endChoice();
+            } else {
+                // delete role from table
+                connection.query(`DELETE FROM role WHERE title = ?`,[answer.roleChoice], (err, res) => {
+                    if (err) throw err;
+                    console.log("Role Successfully Deleted");
 
-    // get user role selection
-
-    // delete role from table
-
-    endChoice();
+                    endChoice();
+                })
+            }
+        })
+    })
 }
+
+
+
 
 function deleteDepartment() {
     console.clear();
