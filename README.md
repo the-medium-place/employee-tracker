@@ -9,12 +9,17 @@ The Employy Manager is a **C**ontent **M**anagement **S**ystem which allows the 
 
 
 ## Installation: 
-* `npm i` for required nodes
+* `git clone` this repo to download code
+* `npm i` to install required modules
 
 ## Usage: 
 * `npm start` to run the program and follow all prompts.
 
-## Tests: 
+## Technologies:
+* [MySQL](http://www.mysql.com)
+* [npm figlet](https://www.npmjs.com/package/figlet)
+* [npm inquirer](https://www.npmjs.com/package/inquirer)
+* [npm console.table](https://www.npmjs.com/package/console.table)
 
 
 ## Contributing:
