@@ -616,9 +616,14 @@ function getUtilizedBudget() {
     console.clear();
     displaySmallLogo("Dept Budget");
 
-
-    // get count for each role
-    connection.query(`SELECT COUNT(role_id) AS role_count, title, salary, name FROM employee JOIN role ON role_id = role.id JOIN department ON department_id = department.id GROUP BY title;`, (err, res) => {
+    // const newquery = `SELECT COUNT(role_id) AS role_count, title, salary, name FROM employee JOIN role ON role_id = role.id JOIN department ON department_id = department.id GROUP BY title;`
+    // capture 
+    // get count (from employee table using role_id), title (role), salary (role), 
+    // department name (from role name using department_id)
+    const newquery = `SELECT COUNT(role_id) AS role_count, role.title, role.salary, department.name FROM employee JOIN role ON role_id = role.id JOIN department ON department_id = department.id GROUP BY role_id; `
+    connection.query(newquery, (err, res) => {
+        // if(err) throw err;
+        // console.log(res);
         // add up cost for each role
         const totalCostObjs = [];
         const deptList = [];
@@ -629,13 +634,21 @@ function getUtilizedBudget() {
             newObj.dept = res[i].name;
             totalCostObjs.push(newObj);
             deptList.push(res[i].name);
-
+            
         }
+        // remove duplicate entries
+        const uniqueJobsList = [... new Set(deptList)]
+
+        // console.log(totalCostObjs);
+        // console.log(deptList);
+        // endChoice();
+
+
         inquirer.prompt([
             {
                 type: "list",
                 message: "Select Department to view Utilized Budget",
-                choices: deptList,
+                choices: uniqueJobsList,
                 name: "deptChoice"
             }
         ])
